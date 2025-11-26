@@ -19,7 +19,7 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
-    "@prisma/client": "^7.0.1",
-    "prisma": "^7.0.1"
+    "prisma": "6.15.0",
+    "@prisma/client": "6.15.0"
   }
 }
