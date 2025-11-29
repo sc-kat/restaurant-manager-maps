@@ -1,35 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+
+    async function loadRestaurants() {
+      try {
+        const response = await fetch('http://localhost:3000/api/restaurants');
+
+        if (!response.ok) {
+          throw new Error("Nu s-au putut incarca restaurantele.");
+        }
+
+        const data = await response.json();
+        setRestaurants(data);
+      } catch (err) {
+        console.error(err);
+        setError("A aparut o eroare la incarcarea restaurantelor.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRestaurants();
+  }, []);
+
+  if (loading) {
+    return <p className='status-message'>Se incarca restaurantele...</p>;
+  }
+  if (error) {
+    return <p className='status-message'>{error}</p>;
+  }
+
+  if (restaurants.length === 0) {
+    return <p className='status-message'>Nu exista restaurante in baza de date</p>;
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className = 'app-container'>
+      <h1>Lista de restaurante</h1>
+      <ul className='restaurant-list'>
+        {restaurants.map((restaurant) => (
+          <li key={restaurant.id}>
+            <strong>{restaurant.name}</strong> - {restaurant.address}
+          </li>
+        ))}
+      </ul>
+    </div >
+  );
 }
 
-export default App
+export default App;

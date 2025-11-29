@@ -28,6 +28,56 @@ Aplicatia este un manager de restaurante, care include:
 
 - `backend/` - codul pentru server (API REST + acces la baza de date)
 - `frontend/` - codul pentru aplicatia React (SPA)
-- `README.md` - fișierul acesta de documentatie
+- `README.md` - acest fisier de documentatie
 
 ---
+
+## Backend (API REST)
+
+Backend-ul este facut cu Node.js, Express, Prisma si SQLite.  
+
+### Cum pornesc backend-ul
+
+1. Deschid terminalul in folderul `backend`:
+
+   cd backend
+
+2. Instalez dependintele (prima data):
+
+   npm install
+
+3. Pornesc serverul:
+
+   npm run dev
+
+Serverul ruleaza pe `http://localhost:3000`.
+
+### Endpoint-uri disponibile (Restaurant)
+
+- `GET /api/health`  
+  Verifica daca serverul raspunde.
+
+- `GET /api/restaurants`  
+  Returneaza lista tuturor restaurantelor.
+
+- `GET /api/restaurants/:id`  
+  Returneaza un restaurant dupa id (ex: `/api/restaurants/1`).
+
+- `POST /api/restaurants`  
+  Creeaza un restaurant nou. Exemplu de body JSON:
+
+  {
+    "name": "Pizza Buna",
+    "address": "Strada X"
+  }
+
+- `PUT /api/restaurants/:id`  
+  Actualizeaza un restaurant existent. Exemplu de body JSON:
+
+  {
+    "name": "Nume nou",
+    "address": "Adresa noua"
+  }
+
+- `DELETE /api/restaurants/:id`  
+  Sterge restaurantul cu id-ul dat.

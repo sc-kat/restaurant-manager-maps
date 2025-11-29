@@ -15,7 +15,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/restaurants', async (req, res) => {
     try {
         const restaurants = await prisma.restaurant.findMany();
-        res.json({ restaurants })
+        res.json(restaurants)
     } catch (error) {
         console.error('Error getting restaurants:', error);
         res.status(500).json({ error: 'Server error' });
@@ -36,7 +36,7 @@ app.get('/api/restaurants/:id', async (req, res) => {
         if (!restaurant) {
             return res.status(404).json({ error: 'Restaurant not found' });
         }
-        res.json({ restaurant });
+        res.json(restaurant);
     }
     catch (error) {
         console.error('Error getting restaurant by ID:', error);
