@@ -29,6 +29,9 @@ async function geocodeAddress(address) {
   }
 }
 
+app.get('/api/config', (req, res) => {
+    res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
+});
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });

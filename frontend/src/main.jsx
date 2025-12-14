@@ -5,6 +5,7 @@ import './index.css'
 import App from './components/App.jsx'
 import MapPage from './components/MapPage.jsx'
 
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

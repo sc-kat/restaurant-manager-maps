@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import RestaurantsMap from './RestaurantsMap';
+import LoadMapKey from './RestaurantsMap';
 import './App.css';
 
 function MapPage({restaurants}) {
+    console.log('restaurants în MapPage:', restaurants);
     return (
         <div className="app-container">
             <nav className='main-nav'>
@@ -12,7 +13,7 @@ function MapPage({restaurants}) {
                 <Link to="/map">Vezi harta restaurantelor</Link>
             </nav>
             <h1>Harta restaurantelor</h1>
-            <RestaurantsMap restaurants={restaurants} />
+            <LoadMapKey restaurants={restaurants} />
         </div>
     );
 }

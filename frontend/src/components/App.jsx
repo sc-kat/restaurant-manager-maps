@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, Routes, Route } from 'react-router-dom';
-import RestaurantsMap from './RestaurantsMap';
+import LoadMapKey from './RestaurantsMap';
 
 function App() {
   const [restaurants, setRestaurants] = useState([]);
@@ -131,7 +131,7 @@ function App() {
         <Link to="/map">Vezi harta restaurantelor</Link>
       </nav>
       <Routes>
-        <Route path="/map" element={<RestaurantsMap restaurants={restaurants} />} />
+        <Route path="/map" element={<LoadMapKey restaurants={restaurants} />} />
         <Route path="*" element={
           <>
             <h1>{editingRestaurantId ? "Editeaza Restaurant" : "Adauga Restaurant"}</h1>
