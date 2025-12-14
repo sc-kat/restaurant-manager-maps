@@ -1,12 +1,34 @@
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 
-const app = express();
+const app = express();  // vs express.Router() ?
 const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+
+async function geocodeAddress(address) {
+  const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
+    );
+
+    if (response.data.results.length > 0) {
+      const { lat, lng } = response.data.results[0].geometry.location;
+      return { latitude: lat, longitude: lng };
+    }
+
+    return { latitude: null, longitude: null };
+  } catch (error) {
+    console.error('Eroare geocoding:', error);
+    return { latitude: null, longitude: null };
+  }
+}
+
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
@@ -56,14 +78,16 @@ app.put('/api/restaurants/:id', async (req, res) => {
             return res.status(400).json({ error: 'Numele si adresa sunt obligatorii' });
         }
 
-        const data = {};
-
-        if (name) data.name = name;
-        if (address) data.address = address;
+        const { latitude, longitude } = await geocodeAddress(address);
 
         const updatedRestaurant = await prisma.restaurant.update({
             where: { id },
-            data,
+            data: { 
+                name, 
+                address, 
+                latitude, 
+                longitude 
+            }
         });
         res.json({ restaurant: updatedRestaurant });
     } catch (error) {
@@ -105,6 +129,8 @@ app.post('/api/restaurants', async (req, res) => {
             return res.status(400).json({ error: 'Numele si adresa sunt obligatorii' });
         }
 
+        const { latitude, longitude } = await geocodeAddress(address);
+
         let user = await prisma.user.findFirst();
         if (!user) {
             user = await prisma.user.create({
@@ -121,6 +147,8 @@ app.post('/api/restaurants', async (req, res) => {
             data: {
                 name,
                 address,
+                latitude,
+                longitude,
                 ownerId: user.id
             }
         });

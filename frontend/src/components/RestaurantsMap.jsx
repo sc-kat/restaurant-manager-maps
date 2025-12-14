@@ -1,5 +1,7 @@
 import {GoogleMap, Marker, useJsApiLoader} from '@react-google-maps/api';
 import "./App.css";
+import { useState,useEffect } from 'react';
+import { useMemo } from 'react';
 
 //setare centru harta, Bucuresti
 const defaultCenter = {
@@ -8,36 +10,29 @@ const defaultCenter = {
 };
 
 function RestaurantsMap({restaurants}) {
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: 'AIzaSyAJAHrceuyZZKRbOcrVQ2GFicDqGW65gbY' 
-    });
+   const [apiKey, setApiKey] = React.useState(null);
+   const [keyLoading, setKeyLoading] = React.useState(true);
 
-     console.log('Restaurante primite:', restaurants);
-     
-    if (loadError) {
-        return <div>Eroare la incarcarea hartii</div>;
-    }
-    if (!isLoaded) {
-        return <div>Se incarca harta...</div>;
+   useEffect(() => {
+
+    async function fetchApiKey() {
+        try {
+            const response = await fetch('http://localhost:3000/api/config');
+            const data = await response.json();
+            setApiKey(data.googleMapsApiKey);
+        } catch (error) {
+            console.error('Eroare la preluarea cheii API:', error);
+        } finally {
+            setKeyLoading(false);
+        }       
     }
 
-    return (
-        <GoogleMap
-            mapContainerClassName="map-container"
-            center={defaultCenter}
-            zoom={12}
-        >
-            {/* <Marker position={defaultCenter} /> */}
-            {restaurants && restaurants.map((restaurant) => (
-                <Marker
-                    key={restaurant.id}
-                    position={{ lat: restaurant.latitude, lng: restaurant.longitude }}
-                    title={restaurant.name}
-                />
-            ))}
-        </GoogleMap>
-    );
+    fetchApiKey();
+   }, []);
+
+   
+    
 }
+
 
 export default RestaurantsMap;
