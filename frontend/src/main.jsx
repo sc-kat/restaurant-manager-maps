@@ -5,7 +5,7 @@ import './index.css'
 import App from './components/App.jsx'
 
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
@@ -13,5 +13,5 @@ createRoot(document.getElementById('root')).render(
 
       </Routes>
     </BrowserRouter>
-  </StrictMode>,
-)
+  </StrictMode>
+);

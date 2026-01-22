@@ -7,8 +7,8 @@ import { apiFetch } from '../apiFetch';
 
 //setare centru harta, Bucuresti
 const defaultCenter = {
-    lat: 44.4268,
-    lng: 26.1025
+  lat: 44.4268,
+  lng: 26.1025,
 };
 
 function LoadMapKey({ restaurants }) {

@@ -14,8 +14,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+  const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [formError, setFormError] = useState(null);
   const [formSuccess, setFormSuccess] = useState(null);
 
@@ -69,12 +69,11 @@ function App() {
       return;
     }
     try {
-
       const url = editingRestaurantId
         ? `http://localhost:3000/api/restaurants/${editingRestaurantId}`
-        : 'http://localhost:3000/api/restaurants';
+        : "http://localhost:3000/api/restaurants";
 
-      const method = editingRestaurantId ? 'PUT' : 'POST';
+      const method = editingRestaurantId ? "PUT" : "POST";
 
       const response = await apiFetch(url, {
         method: method,
@@ -82,23 +81,30 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error(editingRestaurantId ? "Nu s-a putut actualiza restaurantul." :
-          "Nu s-a putut adauga restaurantul.");
+        throw new Error(
+          editingRestaurantId
+            ? "Nu s-a putut actualiza restaurantul."
+            : "Nu s-a putut adauga restaurantul."
+        );
       }
 
       setFormError(null);
-      setFormSuccess(editingRestaurantId ? "Restaurant actualizat cu succes!" :
-        "Restaurant adaugat cu succes!");
-      setName('');
-      setAddress('');
+      setFormSuccess(
+        editingRestaurantId
+          ? "Restaurant actualizat cu succes!"
+          : "Restaurant adaugat cu succes!"
+      );
+      setName("");
+      setAddress("");
       setEditingRestaurantId(null);
       await loadRestaurants();
-
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Eroare la adaugarea restaurantului:", err);
-      setFormError(editingRestaurantId ? "A aparut o eroare la actualizarea restaurantului." :
-        "A aparut o eroare la adaugarea restaurantului.");
+      setFormError(
+        editingRestaurantId
+          ? "A aparut o eroare la actualizarea restaurantului."
+          : "A aparut o eroare la adaugarea restaurantului."
+      );
       setFormSuccess(null);
     }
   }
@@ -112,8 +118,8 @@ function App() {
   }
   function handleCancelEdit() {
     setEditingRestaurantId(null);
-    setName('');
-    setAddress('');
+    setName("");
+    setAddress("");
   }
 
   async function handleDelete(restaurantId) {
@@ -146,8 +152,8 @@ function App() {
   }
 
   return (
-    <div className='app-container'>
-      <nav className='main-nav'>
+    <div className="app-container">
+      <nav className="main-nav">
         <Link to="/">Lista restaurante</Link>
         {" | "}
         <Link to="/map">Vezi harta restaurantelor</Link>
@@ -196,31 +202,43 @@ function App() {
                 {editingRestaurantId && <button type='button' onClick={handleCancelEdit}>Anuleaza</button>}
               </div>
 
-              {formError && <p className='status-message error'>{formError}</p>}
-              {formSuccess && <p className='status-message success'>{formSuccess}</p>}
-            </form>
-            <h1>Lista de restaurante</h1>
-            {restaurants.length === 0 ? (
-              <p className='status-message'>Nu exista restaurante in baza de date.</p>
-            ) : (
-              <ul className='restaurant-list'>
-                {restaurants.map((restaurant) => (
-                  <li key={restaurant.id} className='restaurant-item'>
-                    <div>
-                      <strong>{restaurant.name}</strong> - {restaurant.address}
-                    </div>
-                    <div className='restaurant-actions'>
-                      <button onClick={() => handleEdit(restaurant)}>Editeaza</button>
-                      <button onClick={() => handleDelete(restaurant.id)}>Sterge</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        } />
+                {formError && (
+                  <p className="status-message error">{formError}</p>
+                )}
+                {formSuccess && (
+                  <p className="status-message success">{formSuccess}</p>
+                )}
+              </form>
+              <h1>Lista de restaurante</h1>
+              {restaurants.length === 0 ? (
+                <p className="status-message">
+                  Nu exista restaurante in baza de date.
+                </p>
+              ) : (
+                <ul className="restaurant-list">
+                  {restaurants.map((restaurant) => (
+                    <li key={restaurant.id} className="restaurant-item">
+                      <div>
+                        <strong>{restaurant.name}</strong> -{" "}
+                        {restaurant.address}
+                      </div>
+                      <div className="restaurant-actions">
+                        <button onClick={() => handleEdit(restaurant)}>
+                          Editeaza
+                        </button>
+                        <button onClick={() => handleDelete(restaurant.id)}>
+                          Sterge
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          }
+        />
       </Routes>
-    </div >
+    </div>
   );
 }
 

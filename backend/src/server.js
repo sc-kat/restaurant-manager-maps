@@ -7,7 +7,7 @@ const cors = require('cors');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 
-const app = express();  // vs express.Router() ?
+const app = express(); // vs express.Router() ?
 const prisma = new PrismaClient();
 
 app.use(cors());
@@ -60,8 +60,8 @@ async function geocodeAddress(address) {
     }
 }
 
-app.get('/api/config', (req, res) => {
-    res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '' });
+app.get("/api/config", (req, res) => {
+  res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "" });
 });
 
 app.get('/api/health', (req, res) => {
@@ -158,9 +158,9 @@ app.get('/api/restaurants/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
 
-        if (Number.isNaN(id)) {
-            return res.status(400).json({ error: 'ID invalid' });
-        }
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: "ID invalid" });
+    }
 
         const restaurant = await prisma.restaurant.findFirst({
             where: {
@@ -189,11 +189,13 @@ app.put('/api/restaurants/:id', async (req, res) => {
             return res.status(400).json({ error: 'ID invalid' });
         }
 
-        if (!name || !address) {
-            return res.status(400).json({ error: 'Numele si adresa sunt obligatorii' });
-        }
+    if (!name || !address) {
+      return res
+        .status(400)
+        .json({ error: "Numele si adresa sunt obligatorii" });
+    }
 
-        const { latitude, longitude } = await geocodeAddress(address);
+    const { latitude, longitude } = await geocodeAddress(address);
 
         const updatedRestaurant = await prisma.restaurant.update({
             where: {
@@ -242,13 +244,15 @@ app.delete('/api/restaurants/:id', async (req, res) => {
     }
 });
 
-app.post('/api/restaurants', async (req, res) => {
-    try {
-        const { name, address } = req.body;
+app.post("/api/restaurants", async (req, res) => {
+  try {
+    const { name, address } = req.body;
 
-        if (!name || !address) {
-            return res.status(400).json({ error: 'Numele si adresa sunt obligatorii' });
-        }
+    if (!name || !address) {
+      return res
+        .status(400)
+        .json({ error: "Numele si adresa sunt obligatorii" });
+    }
 
         const { latitude, longitude } = await geocodeAddress(address);
 
@@ -272,6 +276,5 @@ app.post('/api/restaurants', async (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+  console.log(`Backend running on http://localhost:${PORT}`);
 });
-
