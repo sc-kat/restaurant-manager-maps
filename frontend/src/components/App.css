@@ -21,6 +21,9 @@
   color: #007bff;
 }
 .map-container {
-  width: 100%;
-  height: 400px;
+  width: 95vw;
+  max-width: 1400px;
+  height: 70vh;
+  min-height: 600px;
+  margin: 0 auto;
 }

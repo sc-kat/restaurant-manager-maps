@@ -1,3 +1,7 @@
+require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -9,24 +13,51 @@ const prisma = new PrismaClient();
 app.use(cors());
 app.use(express.json());
 
-async function geocodeAddress(address) {
-  const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-
-  try {
-    const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
+function createToken(user) {
+    return jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
     );
+}
 
-    if (response.data.results.length > 0) {
-      const { lat, lng } = response.data.results[0].geometry.location;
-      return { latitude: lat, longitude: lng };
+function authRequired(req, res, next) {
+    const header = req.headers.authorization;
+
+    if (!header || !header.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Lipseste token-ul.' });
     }
 
-    return { latitude: null, longitude: null };
-  } catch (error) {
-    console.error('Eroare geocoding:', error);
-    return { latitude: null, longitude: null };
-  }
+    const token = header.substring('Bearer '.length);
+
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = payload;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Token invalid sau expirat.' });
+    }
+}
+
+
+async function geocodeAddress(address) {
+    const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+    try {
+        const response = await axios.get(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
+        );
+
+        if (response.data.results.length > 0) {
+            const { lat, lng } = response.data.results[0].geometry.location;
+            return { latitude: lat, longitude: lng };
+        }
+
+        return { latitude: null, longitude: null };
+    } catch (error) {
+        console.error('Eroare geocoding:', error);
+        return { latitude: null, longitude: null };
+    }
 }
 
 app.get('/api/config', (req, res) => {
@@ -37,15 +68,91 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
-app.get('/api/restaurants', async (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     try {
-        const restaurants = await prisma.restaurant.findMany();
-        res.json(restaurants)
+        const { email, name, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email si parola sunt obligatorii.' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Parola trebuie sa aiba minim 6 caractere.' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const user = await prisma.user.create({
+            data: {
+                email,
+                name: name || null,
+                passwordHash,
+            },
+            select: { id: true, email: true, name: true },
+        });
+
+        const token = createToken(user);
+
+        return res.status(201).json({ token, user });
     } catch (error) {
-        console.error('Error getting restaurants:', error);
-        res.status(500).json({ error: 'Server error' });
+        if (error.code === 'P2002') {
+            return res.status(409).json({ error: 'Exista deja un cont cu acest email.' });
+        }
+
+        console.error('Eroare la inregistrare:', error);
+        return res.status(500).json({ error: 'Eroare server' });
     }
 });
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email si parola sunt obligatorii.' });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Email sau parola incorecte.' });
+        }
+
+        const ok = await bcrypt.compare(password, user.passwordHash);
+        if (!ok) {
+            return res.status(401).json({ error: 'Email sau parola incorecte.' });
+        }
+
+        const token = createToken({ id: user.id, email: user.email });
+
+        return res.json({
+            token,
+            user: { id: user.id, email: user.email, name: user.name },
+        });
+    } catch (error) {
+        console.error('Eroare la autentificare:', error);
+        return res.status(500).json({ error: 'Eroare server' });
+    }
+});
+
+app.use('/api/restaurants', authRequired);
+
+app.get('/api/restaurants', async (req, res) => {
+    try {
+        const restaurants = await prisma.restaurant.findMany({
+            where: {
+                ownerId: req.user.userId
+            }
+        });
+        res.json(restaurants);
+    } catch (error) {
+        console.error('Eroare la obtinerea restaurantelor:', error);
+        res.status(500).json({ error: 'Eroare server' });
+    }
+});
+
 
 app.get('/api/restaurants/:id', async (req, res) => {
     try {
@@ -55,19 +162,24 @@ app.get('/api/restaurants/:id', async (req, res) => {
             return res.status(400).json({ error: 'ID invalid' });
         }
 
-        const restaurant = await prisma.restaurant.findUnique({
-            where: { id }
-        })
+        const restaurant = await prisma.restaurant.findFirst({
+            where: {
+                id: id,
+                ownerId: req.user.userId,
+            },
+        });
+
         if (!restaurant) {
-            return res.status(404).json({ error: 'Restaurant not found' });
+            return res.status(404).json({ error: 'Restaurantul nu a fost gasit.' });
         }
-        res.json(restaurant);
-    }
-    catch (error) {
-        console.error('Error getting restaurant by ID:', error);
-        res.status(500).json({ error: 'Server error' });
+
+        return res.json(restaurant);
+    } catch (error) {
+        console.error('Eroare la obtinerea restaurantului dupa ID:', error);
+        return res.status(500).json({ error: 'Eroare server' });
     }
 });
+
 
 app.put('/api/restaurants/:id', async (req, res) => {
     try {
@@ -84,12 +196,15 @@ app.put('/api/restaurants/:id', async (req, res) => {
         const { latitude, longitude } = await geocodeAddress(address);
 
         const updatedRestaurant = await prisma.restaurant.update({
-            where: { id },
-            data: { 
-                name, 
-                address, 
-                latitude, 
-                longitude 
+            where: {
+                id: id,
+                ownerId: req.user.userId,
+            },
+            data: {
+                name,
+                address,
+                latitude,
+                longitude
             }
         });
         res.json({ restaurant: updatedRestaurant });
@@ -99,8 +214,8 @@ app.put('/api/restaurants/:id', async (req, res) => {
             return res.status(404).json({ error: 'Restaurantul nu a fost gasit.' });
         }
 
-        console.error('Error updating restaurant:', error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Eroare la actualizarea restaurantului:', error);
+        res.status(500).json({ error: 'Eroare server' });
     }
 });
 
@@ -111,7 +226,10 @@ app.delete('/api/restaurants/:id', async (req, res) => {
             return res.status(400).json({ error: 'ID invalid' });
         }
         await prisma.restaurant.delete({
-            where: { id }
+            where: {
+                id: id,
+                ownerId: req.user.userId,
+            }
         });
         res.status(204).send();
 
@@ -119,8 +237,8 @@ app.delete('/api/restaurants/:id', async (req, res) => {
         if (error.code === 'P2025') {
             return res.status(404).json({ error: 'Restaurantul nu a fost gasit.' });
         }
-        console.error('Error deleting restaurant:', error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Eroare la stergerea restaurantului:', error);
+        res.status(500).json({ error: 'Eroare server' });
     }
 });
 
@@ -134,33 +252,21 @@ app.post('/api/restaurants', async (req, res) => {
 
         const { latitude, longitude } = await geocodeAddress(address);
 
-        let user = await prisma.user.findFirst();
-        if (!user) {
-            user = await prisma.user.create({
-                data: {
-                    email: 'gica@test.ro',
-                    name: 'Gica Mecali',
-                    passwordHash: 'not_secure_hash',
-
-                }
-            });
-        }
-
         const newRestaurant = await prisma.restaurant.create({
             data: {
                 name,
                 address,
                 latitude,
                 longitude,
-                ownerId: user.id
-            }
+                ownerId: req.user.userId, // <-- asta e cheia (userul logat)
+            },
         });
 
-        res.status(201).json({ restaurant: newRestaurant });
+        return res.status(201).json({ restaurant: newRestaurant });
 
     } catch (error) {
-        console.error('Error creating restaurant:', error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Eroare la crearea restaurantului:', error);
+        return res.status(500).json({ error: 'Eroare server' });
     }
 });
 

@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Link, Routes, Route } from 'react-router-dom';
 import LoadMapKey from './RestaurantsMap';
+import { apiFetch } from "../apiFetch";
+import { Link, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import LoginPage from "./LoginPage";
+
 
 function App() {
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,25 +24,41 @@ function App() {
   async function loadRestaurants() {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3000/api/restaurants');
+      const response = await apiFetch('http://localhost:3000/api/restaurants');
 
       if (!response.ok) {
-        throw new Error("Nu s-au putut incarca restaurantele.");
+        let serverMsg = "";
+        try {
+          const errData = await response.json();
+          serverMsg = errData.error || JSON.stringify(errData);
+        } catch {
+          serverMsg = "";
+        }
+
+        throw new Error(`HTTP ${response.status} ${serverMsg}`);
       }
       const data = await response.json();
       setRestaurants(data);
       setError(null);
     } catch (err) {
       console.error("Eroare la incarcarea restaurantelor:", err);
-      setError("A aparut o eroare la incarcarea restaurantelor.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (location.pathname === "/login") return;
+
+    if (!token) {
+      navigate("/login", { replace: true });
+      return;
+    }
     loadRestaurants();
-  }, []);
+  }, [navigate, location.pathname]);
 
   async function handleAddRestaurant(e) {
     e.preventDefault();
@@ -53,11 +76,8 @@ function App() {
 
       const method = editingRestaurantId ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ name, address }),
       });
 
@@ -101,7 +121,7 @@ function App() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:3000/api/restaurants/${restaurantId}`, {
+      const response = await apiFetch(`http://localhost:3000/api/restaurants/${restaurantId}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -116,11 +136,13 @@ function App() {
     }
   }
 
-  if (loading) {
-    return <p className='status-message'>Se incarca restaurantele...</p>;
-  }
-  if (error) {
-    return <p className='status-message'>{error}</p>;
+  if (location.pathname !== "/login") {
+    if (loading) {
+      return <p className='status-message'>Se incarca restaurantele...</p>;
+    }
+    if (error) {
+      return <p className='status-message'>{error}</p>;
+    }
   }
 
   return (
@@ -129,8 +151,23 @@ function App() {
         <Link to="/">Lista restaurante</Link>
         {" | "}
         <Link to="/map">Vezi harta restaurantelor</Link>
+        {" | "}
+        <Link to="/login">Login</Link>
+        {" | "}
+        <button
+          type="button"
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            navigate("/login", { replace: true });
+          }}
+        >
+          Logout
+        </button>
       </nav>
+
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/map" element={<LoadMapKey restaurants={restaurants} />} />
         <Route path="*" element={
           <>
